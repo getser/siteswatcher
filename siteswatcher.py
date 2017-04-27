@@ -3,14 +3,12 @@ import urllib.request
 import smtplib
 
 
-# urls = ['http://docs.python.org/', 'https://www.google.com/1']
-
 def load_from_json(jsonfile):
     """
-    urlssfile - string() filename
+    jsonfile - string() filename
 
     Returns:
-        dict() settings loaded from file.
+        dict() or list() data loaded from file.
     """
 
     try:
@@ -23,49 +21,56 @@ def load_from_json(jsonfile):
 
 
 def send_email(settings, msg):
+    """
+    settings: google smtp setings as a dict() with appropriate keys.
+    msg: Message to be sent in a letter.
+    return: None, just sends mail.
+    """
 
-    # If using gmail, we need to unlock
-    # Captcha to anable script to send
-    # for you:
-    # https://accounts.google.com/displayunlockcaptcha
-    message = 'Subject: URLs problems report\n\n' + msg
-    toaddrs = settings["RECIPIENTS_ADDRESS"]  #['user1_to@gmail.com',]
-    # msg = settings#'Why,Oh why!'
-    username = fromaddr = settings["EMAIL_HOST_USER"]  #'user_from@gmail.com'
-    password = settings["EMAIL_HOST_PASSWORD"]  #'pwd'
+
+    # !!! If using gmail, we need to unlock Captcha to anable script to send
+    # for you: https://accounts.google.com/displayunlockcaptcha !!!
+
+    full_message = 'Subject: URLs problems report\n\n' + msg
+    toaddrs = settings["RECIPIENTS_ADDRESS"]
+    username = fromaddr = settings["EMAIL_HOST_USER"]
+    password = settings["EMAIL_HOST_PASSWORD"]
     server = smtplib.SMTP(':'.join([settings["EMAIL_HOST"], str(settings["EMAIL_PORT"])]))
     server.ehlo()
     server.starttls()
     server.login(username, password)
-    server.sendmail(fromaddr, toaddrs, message)
+    server.sendmail(fromaddr, toaddrs, full_message)
     server.quit()
 
 
-urls = load_from_json('sitesurls.json')
-email_settings = load_from_json('mail_settings.json')
-message = ''
+def main():
+    urls = load_from_json('sitesurls.json')
+    email_settings = load_from_json('mail_settings.json')
+    message = ''
 
-for url in urls:
-    try:
-        response = urllib.request.urlopen(url)
-        if response.getcode() == 200:
-            print('Bingo')
-        else:
-            print('The response code was not 200, but: {}'.format(
-                response.get_code()))
+    for url in urls:
+        try:
+            response = urllib.request.urlopen(url)
+            if response.getcode() == 200:
+                # print(url, 'Bingo')
+                pass
+            else:
+                print('The response code was not 200, but: {}'.format(response.get_code()))
+                message += '\nThe site at URL {} is probably broken. The response code was not 200, but: {}.\n'.format(
+                    url, response.get_code())
 
-            message += '\nThe site at URL {} is probably broken. The response code was not 200, but: {}.\n'.format(
-                url, response.get_code())
+        except urllib.error.HTTPError as e:
+            print('The site at URL {} is probably broken. An error occurred: {}. The response code was {}.'.format(
+                url, e, e.getcode()))
+            message += '\nThe site at URL {} is probably broken. An error occurred: {}. The response code was {}.\n'.format(
+                url, e, e.getcode())
 
-    except urllib.error.HTTPError as e:
-        print('The site at URL {} is probably broken. An error occurred: {}. The response code was {}.'.format(
-            url, e, e.getcode()))
+        except ValueError:
+            print('Wrong URL entered: {}'.format(url))
+            message += 'Wrong URL entered: {}'.format(url)
 
-        message += '\nThe site at URL {} is probably broken. An error occurred: {}. The response code was {}.\n'.format(
-            url, e, e.getcode())
+    if message:
+        send_email(email_settings, message)
 
-    except ValueError:
-        print('Wrong URL: {}'.format(url))
-
-if message:
-    send_email(email_settings, message)
+if __name__ == '__main__':
+    main()
