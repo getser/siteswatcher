@@ -4,5 +4,5 @@
   "EMAIL_HOST_PASSWORD": "********",
   "EMAIL_PORT": 587,
   "EMAIL_USE_TLS": 1,
-  "RECIPIENTS_ADDRESS": ["getser@mail.ru", "getser79@gmail.com"]
+  "RECIPIENTS_ADDRESS": ["******@*****", "***@**"]
 }
